@@ -6,24 +6,26 @@ import (
 	"math/rand"
 	"sort"
 	"sync"
-	"testing"
 	"time"
 
-	pb "github.com/libp2p/go-libp2p-kad-dht/pb"
+	pb        "github.com/libp2p/go-libp2p-kad-dht/pb"
 
-	cid "github.com/ipfs/go-cid"
-	ds "github.com/ipfs/go-datastore"
-	dssync "github.com/ipfs/go-datastore/sync"
-	u "github.com/ipfs/go-ipfs-util"
-	kb "github.com/libp2p/go-libp2p-kbucket"
-	netutil "github.com/libp2p/go-libp2p-netutil"
-	peer "github.com/libp2p/go-libp2p-peer"
-	pstore "github.com/libp2p/go-libp2p-peerstore"
-	record "github.com/libp2p/go-libp2p-record"
-	bhost "github.com/libp2p/go-libp2p/p2p/host/basic"
-	ci "github.com/libp2p/go-testutil/ci"
-	travisci "github.com/libp2p/go-testutil/ci/travis"
-	ma "github.com/multiformats/go-multiaddr"
+	cid       "github.com/ipfs/go-cid"
+	ds        "github.com/ipfs/go-datastore"
+	dssync    "github.com/ipfs/go-datastore/sync"
+	u         "github.com/ipfs/go-ipfs-util"
+	kb        "github.com/libp2p/go-libp2p-kbucket"
+	netutil   "github.com/libp2p/go-libp2p-netutil"
+	peer      "github.com/libp2p/go-libp2p-peer"
+	pstore    "github.com/libp2p/go-libp2p-peerstore"
+	record    "github.com/libp2p/go-libp2p-record"
+	bhost     "github.com/libp2p/go-libp2p/p2p/host/basic"
+	ci        "github.com/libp2p/go-testutil/ci"
+	travisci  "github.com/libp2p/go-testutil/ci/travis"
+	ma        "github.com/multiformats/go-multiaddr"
+
+						"testing"
+	.         "github.com/smartystreets/goconvey/convey"
 )
 
 var testCaseValues = map[string][]byte{}
@@ -141,61 +143,51 @@ func bootstrap(t *testing.T, ctx context.Context, dhts []*IpfsDHT) {
 }
 
 func TestValueGetSet(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	Convey("Test value get and set", t, 
+		func () { 
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
 
-	dhtA := setupDHT(ctx, t, false)
-	dhtB := setupDHT(ctx, t, false)
+			dhtA := setupDHT(ctx, t, false)
+			dhtB := setupDHT(ctx, t, false)
 
-	defer dhtA.Close()
-	defer dhtB.Close()
-	defer dhtA.host.Close()
-	defer dhtB.host.Close()
+			defer dhtA.Close()
+			defer dhtB.Close()
+			defer dhtA.host.Close()
+			defer dhtB.host.Close()
 
-	vf := &record.ValidChecker{
-		Func: func(string, []byte) error { return nil },
-		Sign: false,
-	}
-	nulsel := func(_ string, bs [][]byte) (int, error) { return 0, nil }
+			vf := &record.ValidChecker{
+				Func: func(string, []byte) error { return nil },
+				Sign: false,
+			}
+			nulsel := func(_ string, bs [][]byte) (int, error) { return 0, nil }
 
-	dhtA.Validator["v"] = vf
-	dhtB.Validator["v"] = vf
-	dhtA.Selector["v"] = nulsel
-	dhtB.Selector["v"] = nulsel
+			dhtA.Validator["v"] = vf
+			dhtB.Validator["v"] = vf
+			dhtA.Selector["v"]  = nulsel
+			dhtB.Selector["v"]  = nulsel
 
-	connect(t, ctx, dhtA, dhtB)
+			connect(t, ctx, dhtA, dhtB)
 
-	log.Error("adding value on: ", dhtA.self)
-	ctxT, cancel := context.WithTimeout(ctx, time.Second)
-	defer cancel()
-	err := dhtA.PutValue(ctxT, "/v/hello", []byte("world"))
-	if err != nil {
-		t.Fatal(err)
-	}
+			log.Error("adding value on: ", dhtA.self)
+			ctxT, cancel := context.WithTimeout(ctx, time.Second)
+			defer cancel()
+			err := dhtA.PutValue(ctxT, "/v/hello", []byte("world"))
+			So(err, ShouldBeNil)
 
-	/*
-		ctxT, _ = context.WithTimeout(ctx, time.Second*2)
-		val, err := dhtA.GetValue(ctxT, "/v/hello")
-		if err != nil {
-			t.Fatal(err)
-		}
+			ctxT, _ = context.WithTimeout(ctx, time.Second*2)
+			val, err := dhtA.GetValue(ctxT, "/v/hello")
+			So(err, ShouldBeNil)
+			So(string(val), ShouldEqual, "world")
 
-		if string(val) != "world" {
-			t.Fatalf("Expected 'world' got '%s'", string(val))
-		}
-	*/
+			log.Error("requesting value on dht: ", dhtB.self)
+			ctxT, cancel = context.WithTimeout(ctx, time.Second*2)
+			defer cancel()
+			valb, err := dhtB.GetValue(ctxT, "/v/hello")
+			So(err, ShouldBeNil)
 
-	log.Error("requesting value on dht: ", dhtB.self)
-	ctxT, cancel = context.WithTimeout(ctx, time.Second*2)
-	defer cancel()
-	valb, err := dhtB.GetValue(ctxT, "/v/hello")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if string(valb) != "world" {
-		t.Fatalf("Expected 'world' got '%s'", string(valb))
-	}
+			So(string(valb), ShouldEqual, "world")
+		})
 }
 
 func TestProvides(t *testing.T) {
