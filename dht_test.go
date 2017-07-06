@@ -25,7 +25,7 @@ import (
 	ma        "github.com/multiformats/go-multiaddr"
 
 						"testing"
-	.         "github.com/smartystreets/goconvey/convey"
+	.			    "github.com/smartystreets/goconvey/convey"
 )
 
 var testCaseValues = map[string][]byte{}
@@ -54,28 +54,38 @@ func setupDHT(ctx context.Context, t *testing.T, client bool) *IpfsDHT {
 		d = NewDHT(ctx, h, dss)
 	}
 
+	
+	// "v" is !important
+
+	// Always succeeds validator function
+	// I think these apply to all records added to the DHT
+	// https://github.com/libp2p/go-libp2p-record/blob/master/validation.go
 	d.Validator["v"] = &record.ValidChecker{
 		Func: func(string, []byte) error {
 			return nil
 		},
 		Sign: false,
 	}
+	// Selector (just returns "0", as being the first option out of the list, i.e. "null/dumb selector")
+	// Seems to me this is about choosing which hash out of a bunch of hashes is the best one
+	//   i.e. this is where one would implement some kind of XOR closeness.. Dunno
+	// https://github.com/libp2p/go-libp2p-record/blob/35bb3f2c8f7cd81c1584560656a5246131a82405/selection.go
 	d.Selector["v"] = func(_ string, bs [][]byte) (int, error) { return 0, nil }
 	return d
 }
 
 func setupDHTS(ctx context.Context, n int, t *testing.T) ([]ma.Multiaddr, []peer.ID, []*IpfsDHT) {
-	addrs := make([]ma.Multiaddr, n)
-	dhts := make([]*IpfsDHT, n)
-	peers := make([]peer.ID, n)
+	addrs 					:= make([]ma.Multiaddr, n)
+	dhts 						:= make([]*IpfsDHT, 		n)
+	peers 					:= make([]peer.ID, 			n)
 
-	sanityAddrsMap := make(map[string]struct{})
-	sanityPeersMap := make(map[string]struct{})
+	sanityAddrsMap 	:= make(map[string]struct{})
+	sanityPeersMap 	:= make(map[string]struct{})
 
 	for i := 0; i < n; i++ {
-		dhts[i] = setupDHT(ctx, t, false)
-		peers[i] = dhts[i].self
-		addrs[i] = dhts[i].peerstore.Addrs(dhts[i].self)[0]
+		dhts[i] 	= setupDHT(ctx, t, false)
+		peers[i] 	= dhts[i].self
+		addrs[i] 	= dhts[i].peerstore.Addrs(dhts[i].self)[0]
 
 		if _, lol := sanityAddrsMap[addrs[i].String()]; lol {
 			t.Fatal("While setting up DHTs address got duplicated.")
@@ -143,9 +153,14 @@ func bootstrap(t *testing.T, ctx context.Context, dhts []*IpfsDHT) {
 }
 
 func TestValueGetSet(t *testing.T) {
+	
+	// Creates a DHT with two nodes and checks that a put
 	Convey("Test value get and set", t, 
 		func () { 
 			ctx, cancel := context.WithCancel(context.Background())
+
+			loggingEvent := log.EventBegin(ctx, "Test value get and set")
+
 			defer cancel()
 
 			dhtA := setupDHT(ctx, t, false)
@@ -156,16 +171,21 @@ func TestValueGetSet(t *testing.T) {
 			defer dhtA.host.Close()
 			defer dhtB.host.Close()
 
-			vf := &record.ValidChecker{
-				Func: func(string, []byte) error { return nil },
-				Sign: false,
-			}
-			nulsel := func(_ string, bs [][]byte) (int, error) { return 0, nil }
 
-			dhtA.Validator["v"] = vf
-			dhtB.Validator["v"] = vf
-			dhtA.Selector["v"]  = nulsel
-			dhtB.Selector["v"]  = nulsel
+			// Looks to me like this is done by setupDHT anyway
+			// 
+			// vf := &record.ValidChecker{
+			// 	Func: func(string, []byte) error { return nil },
+			// 	Sign: false,
+			// }
+			// nulsel := func(_ string, bs [][]byte) (int, error) { return 0, nil }
+
+			// // Validator function always returns nil (success)
+			// dhtA.Validator["v"] = vf
+			// dhtB.Validator["v"] = vf
+			// // nulsel always returns 0 (first / dumb selector)
+			// dhtA.Selector["v"]  = nulsel
+			// dhtB.Selector["v"]  = nulsel
 
 			connect(t, ctx, dhtA, dhtB)
 
@@ -185,8 +205,9 @@ func TestValueGetSet(t *testing.T) {
 			defer cancel()
 			valb, err := dhtB.GetValue(ctxT, "/v/hello")
 			So(err, ShouldBeNil)
-
 			So(string(valb), ShouldEqual, "world")
+			
+			loggingEvent.Done()
 		})
 }
 
