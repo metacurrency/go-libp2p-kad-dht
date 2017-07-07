@@ -154,7 +154,13 @@ func (dht *IpfsDHT) runBootstrap(ctx context.Context, cfg BootstrapConfig) error
 		}
 	}
 
-	sequential := true
+	// It is determined that running the sequential bootstrap is more efficient as
+  //   the nodes are able to capitalise on previous work done. 
+  // tried async. sequential fares much better. compare:
+  // 100 async https://gist.github.com/jbenet/56d12f0578d5f34810b2
+  // 100 sync  https://gist.github.com/jbenet/6c59e7c15426e48aaedd
+  // probably because results compound
+  sequential := true
 	if sequential {
 		// these should be parallel normally. but can make them sequential for debugging.
 		// note that the core/bootstrap context deadline should be extended too for that.
