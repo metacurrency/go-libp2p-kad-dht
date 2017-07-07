@@ -182,6 +182,7 @@ func TestConfigureLogging(t *testing.T) {
 
 func TestValueGetSet(t *testing.T) {
 	// t.Skip("skipping test to debug another")
+  fmt.Println("Test value get and set between two nodes")
 
 
 	// Creates a DHT with two nodes and checks that a put can be read with a get
@@ -189,8 +190,6 @@ func TestValueGetSet(t *testing.T) {
 	Convey("Test value get and set", t, 
 		func () { 
 			ctx, cancel := context.WithCancel(context.Background())
-
-			fmt.Println("Test value get and set between two nodes")
 
 			defer cancel()
 
@@ -243,8 +242,9 @@ func TestValueGetSet(t *testing.T) {
 
 func TestProvides(t *testing.T) {
 	t.Skip("skipping test to debug another")
+	fmt.Println("TestProvides")
 
-	
+
 	ctx := context.Background()
 
 	_, _, dhts := setupDHTS(ctx, 4, t)
@@ -294,7 +294,7 @@ func TestProvides(t *testing.T) {
 
 func TestLocalProvides(t *testing.T) {
 	t.Skip("skipping test to debug another")
-
+  fmt.Println("TestLocalProvides")
 
 	ctx := context.Background()
 
@@ -378,6 +378,7 @@ func printRoutingTables(dhts []*IpfsDHT) {
 
 func TestBootstrap(t *testing.T) {
 	t.Skip("skipping test to debug another")
+  fmt.Println("TestBootstrap")
 
 
 	if testing.Short() {
@@ -430,6 +431,7 @@ func TestBootstrap(t *testing.T) {
 
 func TestPeriodicBootstrap(t *testing.T) {
 	t.Skip("skipping test to debug another")
+  fmt.Println("TestPeriodicBootstrap")
 
 
 	if ci.IsRunning() {
@@ -516,6 +518,7 @@ func TestPeriodicBootstrap(t *testing.T) {
 func TestProvidesMany(t *testing.T) {
 	t.Skip("this test doesn't work")
 	t.Skip("skipping test to debug another")
+  fmt.Println("TestProvidesMany")
 
 
 	ctx := context.Background()
@@ -615,6 +618,7 @@ func TestProvidesMany(t *testing.T) {
 
 func TestProvidesAsync(t *testing.T) {
 	t.Skip("skipping test to debug another")
+  fmt.Println("TestProvidesAsync")
 
 
 	if testing.Short() {
@@ -663,6 +667,7 @@ func TestProvidesAsync(t *testing.T) {
 
 func TestLayeredGet(t *testing.T) {
 	t.Skip("skipping test to debug another")
+  fmt.Println("TestLayeredGet")
 
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -701,6 +706,7 @@ func TestLayeredGet(t *testing.T) {
 
 func TestFindPeer(t *testing.T) {
 	t.Skip("skipping test to debug another")
+  fmt.Println("TestFindPeer")
 
 
 	if testing.Short() {
@@ -739,6 +745,7 @@ func TestFindPeer(t *testing.T) {
 
 func TestFindPeersConnectedToPeer(t *testing.T) {
 	t.Skip("not quite correct (see note)")
+  fmt.Println("TestFindPeersConnectedToPeer")
 
 
 	if testing.Short() {
@@ -794,6 +801,7 @@ func TestFindPeersConnectedToPeer(t *testing.T) {
 
 func testPeerListsMatch(t *testing.T, p1, p2 []peer.ID) {
 	t.Skip("skipping test to debug another")
+  fmt.Println("TestPeerListsMatch")
 
 
 	if len(p1) != len(p2) {
@@ -823,6 +831,7 @@ func testPeerListsMatch(t *testing.T, p1, p2 []peer.ID) {
 
 func TestConnectCollision(t *testing.T) {
 	t.Skip("skipping test to debug another")
+  fmt.Println("TestConnectCollision")
 
 
 	if testing.Short() {
@@ -889,6 +898,7 @@ func TestConnectCollision(t *testing.T) {
 
 func TestBadProtoMessages(t *testing.T) {
 	t.Skip("skipping test to debug another")
+  fmt.Println("TestBadProtoMessages")
 
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -904,6 +914,7 @@ func TestBadProtoMessages(t *testing.T) {
 
 func TestClientModeConnect(t *testing.T) {
 	t.Skip("skipping test to debug another")
+  fmt.Println("TestClientModeConnect")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -934,7 +945,7 @@ func TestClientModeConnect(t *testing.T) {
 
 func TestFindPeerQuery(t *testing.T) {
 	t.Skip("skipping test to debug another")
-
+  fmt.Println("TestFindPeerQuery")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -1034,6 +1045,7 @@ func countDiffPeers(a, b []peer.ID) int {
 
 func TestFindClosestPeers(t *testing.T) {
 	t.Skip("skipping test to debug another")
+  fmt.Println("TestFindClosestPeers")
 
 
 	ctx, cancel := context.WithCancel(context.Background())
