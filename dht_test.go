@@ -26,6 +26,9 @@ import (
 
 						"testing"
 	.			    "github.com/smartystreets/goconvey/convey"
+
+	logging   "github.com/whyrusleeping/go-logging"
+	os  			"os"
 )
 
 var testCaseValues = map[string][]byte{}
@@ -154,8 +157,33 @@ func bootstrap(t *testing.T, ctx context.Context, dhts []*IpfsDHT) {
 	cancel()
 }
 
+func TestConfigureLogging(t *testing.T) {
+	// t.Skip("Skipping this test turns off Ultra Debugging Output")
+
+	var format = logging.MustStringFormatter(
+		`%{color}%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{id:03x}%{color:reset} %{message}`,
+	)
+
+	backend1 := logging.NewLogBackend(os.Stderr, "", 0)
+
+	// For messages written to backend2 we want to add some additional
+	// information to the output, including the used log level and the name of
+	// the function.
+	backend1Formatter := logging.NewBackendFormatter(backend1, format)
+
+	// Only errors and more severe messages should be sent to backend1
+	backend1Leveled := logging.AddModuleLevel(backend1)
+	backend1Leveled.SetLevel(logging.DEBUG, "")
+
+	// Set the backends to be used.
+	logging.SetBackend(backend1, backend1Formatter)
+
+}
+
 func TestValueGetSet(t *testing.T) {
-	
+	// t.Skip("skipping test to debug another")
+
+
 	// Creates a DHT with two nodes and checks that a put can be read with a get
 	//  The DHT nodes are referenced by variable pointers
 	Convey("Test value get and set", t, 
@@ -214,7 +242,9 @@ func TestValueGetSet(t *testing.T) {
 }
 
 func TestProvides(t *testing.T) {
-	// t.Skip("skipping test to debug another")
+	t.Skip("skipping test to debug another")
+
+	
 	ctx := context.Background()
 
 	_, _, dhts := setupDHTS(ctx, 4, t)
@@ -263,7 +293,9 @@ func TestProvides(t *testing.T) {
 }
 
 func TestLocalProvides(t *testing.T) {
-	// t.Skip("skipping test to debug another")
+	t.Skip("skipping test to debug another")
+
+
 	ctx := context.Background()
 
 	_, _, dhts := setupDHTS(ctx, 4, t)
@@ -345,7 +377,9 @@ func printRoutingTables(dhts []*IpfsDHT) {
 }
 
 func TestBootstrap(t *testing.T) {
-	// t.Skip("skipping test to debug another")
+	t.Skip("skipping test to debug another")
+
+
 	if testing.Short() {
 		t.SkipNow()
 	}
@@ -395,7 +429,9 @@ func TestBootstrap(t *testing.T) {
 }
 
 func TestPeriodicBootstrap(t *testing.T) {
-	// t.Skip("skipping test to debug another")
+	t.Skip("skipping test to debug another")
+
+
 	if ci.IsRunning() {
 		t.Skip("skipping on CI. highly timing dependent")
 	}
@@ -479,7 +515,9 @@ func TestPeriodicBootstrap(t *testing.T) {
 
 func TestProvidesMany(t *testing.T) {
 	t.Skip("this test doesn't work")
-	// t.Skip("skipping test to debug another")
+	t.Skip("skipping test to debug another")
+
+
 	ctx := context.Background()
 
 	nDHTs := 40
@@ -576,7 +614,9 @@ func TestProvidesMany(t *testing.T) {
 }
 
 func TestProvidesAsync(t *testing.T) {
-	// t.Skip("skipping test to debug another")
+	t.Skip("skipping test to debug another")
+
+
 	if testing.Short() {
 		t.SkipNow()
 	}
@@ -622,6 +662,9 @@ func TestProvidesAsync(t *testing.T) {
 }
 
 func TestLayeredGet(t *testing.T) {
+	t.Skip("skipping test to debug another")
+
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -657,7 +700,9 @@ func TestLayeredGet(t *testing.T) {
 }
 
 func TestFindPeer(t *testing.T) {
-	// t.Skip("skipping test to debug another")
+	t.Skip("skipping test to debug another")
+
+
 	if testing.Short() {
 		t.SkipNow()
 	}
@@ -694,6 +739,7 @@ func TestFindPeer(t *testing.T) {
 
 func TestFindPeersConnectedToPeer(t *testing.T) {
 	t.Skip("not quite correct (see note)")
+
 
 	if testing.Short() {
 		t.SkipNow()
@@ -747,6 +793,8 @@ func TestFindPeersConnectedToPeer(t *testing.T) {
 }
 
 func testPeerListsMatch(t *testing.T, p1, p2 []peer.ID) {
+	t.Skip("skipping test to debug another")
+
 
 	if len(p1) != len(p2) {
 		t.Fatal("did not find as many peers as should have", p1, p2)
@@ -774,7 +822,9 @@ func testPeerListsMatch(t *testing.T, p1, p2 []peer.ID) {
 }
 
 func TestConnectCollision(t *testing.T) {
-	// t.Skip("skipping test to debug another")
+	t.Skip("skipping test to debug another")
+
+
 	if testing.Short() {
 		t.SkipNow()
 	}
@@ -838,6 +888,9 @@ func TestConnectCollision(t *testing.T) {
 }
 
 func TestBadProtoMessages(t *testing.T) {
+	t.Skip("skipping test to debug another")
+
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -850,6 +903,8 @@ func TestBadProtoMessages(t *testing.T) {
 }
 
 func TestClientModeConnect(t *testing.T) {
+	t.Skip("skipping test to debug another")
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -878,6 +933,9 @@ func TestClientModeConnect(t *testing.T) {
 }
 
 func TestFindPeerQuery(t *testing.T) {
+	t.Skip("skipping test to debug another")
+
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -975,6 +1033,9 @@ func countDiffPeers(a, b []peer.ID) int {
 }
 
 func TestFindClosestPeers(t *testing.T) {
+	t.Skip("skipping test to debug another")
+
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
