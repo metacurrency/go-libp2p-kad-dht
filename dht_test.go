@@ -88,12 +88,14 @@ func setupDHTS(ctx context.Context, n int, t *testing.T) ([]ma.Multiaddr, []peer
 		addrs[i] 	= dhts[i].peerstore.Addrs(dhts[i].self)[0]
 
 		if _, lol := sanityAddrsMap[addrs[i].String()]; lol {
-			t.Fatal("While setting up DHTs address got duplicated.")
+			// if we have generated a colliding dht, generate another one
+			i--
 		} else {
 			sanityAddrsMap[addrs[i].String()] = struct{}{}
 		}
 		if _, lol := sanityPeersMap[peers[i].String()]; lol {
-			t.Fatal("While setting up DHTs peerid got duplicated.")
+			//  if we have generated a colliding id, generate another dht
+			i--
 		} else {
 			sanityPeersMap[peers[i].String()] = struct{}{}
 		}
@@ -103,7 +105,7 @@ func setupDHTS(ctx context.Context, n int, t *testing.T) ([]ma.Multiaddr, []peer
 }
 
 func connectNoSync(t *testing.T, ctx context.Context, a, b *IpfsDHT) {
-	idB := b.self
+	idB 	:= b.self
 	addrB := b.peerstore.Addrs(idB)
 	if len(addrB) == 0 {
 		t.Fatal("peers setup incorrectly: no local address")
@@ -154,12 +156,13 @@ func bootstrap(t *testing.T, ctx context.Context, dhts []*IpfsDHT) {
 
 func TestValueGetSet(t *testing.T) {
 	
-	// Creates a DHT with two nodes and checks that a put
+	// Creates a DHT with two nodes and checks that a put can be read with a get
+	//  The DHT nodes are referenced by variable pointers
 	Convey("Test value get and set", t, 
 		func () { 
 			ctx, cancel := context.WithCancel(context.Background())
 
-			loggingEvent := log.EventBegin(ctx, "Test value get and set")
+			fmt.Println("Test value get and set between two nodes")
 
 			defer cancel()
 
@@ -187,6 +190,7 @@ func TestValueGetSet(t *testing.T) {
 			// dhtA.Selector["v"]  = nulsel
 			// dhtB.Selector["v"]  = nulsel
 
+
 			connect(t, ctx, dhtA, dhtB)
 
 			log.Error("adding value on: ", dhtA.self)
@@ -206,8 +210,6 @@ func TestValueGetSet(t *testing.T) {
 			valb, err := dhtB.GetValue(ctxT, "/v/hello")
 			So(err, ShouldBeNil)
 			So(string(valb), ShouldEqual, "world")
-			
-			loggingEvent.Done()
 		})
 }
 
