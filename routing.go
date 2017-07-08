@@ -261,11 +261,11 @@ func (dht *IpfsDHT) Provide(ctx context.Context, key *cid.Cid, brdcst bool) erro
 	}
 
 	wg := sync.WaitGroup{}
-	for p := range peers {
+  for p := range peers {
 		wg.Add(1)
 		go func(p peer.ID) {
 			defer wg.Done()
-			log.Debugf("putProvider(%s, %s)", key, p)
+			log.Debugf("putProvider(%v, %s, %s)", dht.self, key, p)
 			err := dht.sendMessage(ctx, p, mes)
 			if err != nil {
 				log.Debug(err)
