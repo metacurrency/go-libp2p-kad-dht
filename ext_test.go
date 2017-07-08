@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+  fmt "fmt"
+
 	ggio "github.com/gogo/protobuf/io"
 	ds "github.com/ipfs/go-datastore"
 	dssync "github.com/ipfs/go-datastore/sync"
@@ -20,6 +22,10 @@ import (
 )
 
 func TestGetFailures(t *testing.T) {
+  t.Skip("skipping test to debug another")
+  fmt.Println("ext_test.go: TestGetFailures")
+
+
 	if testing.Short() {
 		t.SkipNow()
 	}
@@ -145,7 +151,9 @@ func TestGetFailures(t *testing.T) {
 }
 
 func TestNotFound(t *testing.T) {
-	// t.Skip("skipping test to debug another")
+	t.Skip("skipping test to debug another")
+  fmt.Println("ext_test.go: TestNotFound")
+
 	if testing.Short() {
 		t.SkipNow()
 	}
@@ -226,6 +234,8 @@ func TestNotFound(t *testing.T) {
 func TestLessThanKResponses(t *testing.T) {
 	// t.Skip("skipping test to debug another")
 	// t.Skip("skipping test because it makes a lot of output")
+  t.Skip("skipping test to debug another")
+  fmt.Println("ext_test.go: TestLessThanKResponses")
 
 	ctx := context.Background()
 	mn, err := mocknet.FullMeshConnected(ctx, 6)
