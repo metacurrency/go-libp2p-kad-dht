@@ -31,6 +31,7 @@ import (
 	os  			"os"
 )
 
+
 var testCaseValues = map[string][]byte{}
 var testCaseCids []*cid.Cid
 
@@ -180,10 +181,9 @@ func TestConfigureLogging(t *testing.T) {
 
 }
 
-func TestValueSetGet(t *testing.T) {
+func TestValuePutGet(t *testing.T) {
 	// t.Skip("skipping test to debug another")
 	fmt.Println("Test value set and then get between two nodes")
-
 
 	// Creates a DHT with two nodes and checks that a put can be read with a get
 	//  The DHT nodes are referenced by variable pointers
@@ -222,23 +222,23 @@ func TestValueSetGet(t *testing.T) {
 			// dhtB.Selector["v"]  = nulsel
 
 
-			fmt.Println("dht_test.go: TestValueSetGet: connect(t, ctx, dhtA, dhtB)")
+			fmt.Printf("dht_test.go: TestValueSetGet: connect(t, ctx, dhtA (%v), dhtB (%v) )\n", dhtA.self, dhtB.self)
 			connect(t, ctx, dhtA, dhtB)
 
 			log.Error("adding value on: ", dhtA.self)
-			fmt.Println("dht_test.go: TestValueSetGet: dhtA PutValue \"/v/hello\"")
+			fmt.Printf("dht_test.go: TestValueSetGet: dhtA (%v) PutValue \"/v/hello\"\n", dhtA.self)
 			ctxT, cancel := context.WithTimeout(ctx, time.Second)
 			defer cancel()
 			err := dhtA.PutValue(ctxT, "/v/hello", []byte("world"))
 			So(err, ShouldBeNil)
 
-			fmt.Println("dht_test.go: TestValueSetGet: dhtA GetValue \"/v/hello\"")
+			fmt.Println("dht_test.go: TestValueSetGet: dhtA (%v) GetValue \"/v/hello\"\n", dhtA.self)
 			ctxT, _ = context.WithTimeout(ctx, time.Second*2)
 			val, err := dhtA.GetValue(ctxT, "/v/hello")
 			So(err, ShouldBeNil)
 			So(string(val), ShouldEqual, "world")
 
-			fmt.Println("dht_test.go: TestValueSetGet: dhtB GetValue \"/v/hello\"")
+			fmt.Println("dht_test.go: TestValueSetGet: dhtB (%v) GetValue \"/v/hello\"\n", dhtB.self)
 			log.Error("requesting value on dht: ", dhtB.self)
 			ctxT, cancel = context.WithTimeout(ctx, time.Second*2)
 			defer cancel()
