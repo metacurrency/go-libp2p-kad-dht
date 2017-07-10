@@ -36,6 +36,9 @@ var testCaseValues = map[string][]byte{}
 var testCaseCids []*cid.Cid
 
 func init() {
+	fmt.Println("dht_test.go: init")
+
+	// create a set of hash values to add as keys to the dht
 	testCaseValues["hello"] = []byte("world")
 	for i := 0; i < 100; i++ {
 		k := fmt.Sprintf("%d -- key", i)
@@ -86,7 +89,9 @@ func setupDHTS(ctx context.Context, n int, t *testing.T) ([]ma.Multiaddr, []peer
 	sanityAddrsMap 	:= make(map[string]struct{})
 	sanityPeersMap 	:= make(map[string]struct{})
 
+	fmt.Printf("dht_test.go: setupDHTS: creating %v DHT nodes", n)
 	for i := 0; i < n; i++ {
+		
 		dhts[i] 	= setupDHT(ctx, t, false)
 		peers[i] 	= dhts[i].self
 		addrs[i] 	= dhts[i].peerstore.Addrs(dhts[i].self)[0]
@@ -104,6 +109,11 @@ func setupDHTS(ctx context.Context, n int, t *testing.T) ([]ma.Multiaddr, []peer
 			sanityPeersMap[peers[i].String()] = struct{}{}
 		}
 	}
+
+	for i := 0; i < n; i++ {
+		fmt.Printf("%v: %v, ", i, dhts[i].self)
+	}
+	fmt.Printf("\n")
 
 	return addrs, peers, dhts
 }
@@ -123,6 +133,8 @@ func connectNoSync(t *testing.T, ctx context.Context, a, b *IpfsDHT) {
 }
 
 func connect(t *testing.T, ctx context.Context, a, b *IpfsDHT) {
+	fmt.Printf("dht_test.go: connect: (t, ctx, a (%v), b (%v) )\n", a.self, b.self)
+
 	connectNoSync(t, ctx, a, b)
 
 	// loop until connection notification has been received.
@@ -137,6 +149,8 @@ func connect(t *testing.T, ctx context.Context, a, b *IpfsDHT) {
 }
 
 func bootstrap(t *testing.T, ctx context.Context, dhts []*IpfsDHT) {
+	fmt.Println("dht_test.go: bootstrap")
+
 
 	ctx, cancel := context.WithCancel(ctx)
 	log.Debugf("Bootstrapping DHTs...")
@@ -153,6 +167,7 @@ func bootstrap(t *testing.T, ctx context.Context, dhts []*IpfsDHT) {
 	start := rand.Intn(len(dhts)) // randomize to decrease bias.
 	for i := range dhts {
 		dht := dhts[(start+i)%len(dhts)]
+		fmt.Printf("dht_test.go: bootstrap: on dht node: %v", dht.self)
 		dht.runBootstrap(ctx, cfg)
 	}
 	cancel()
@@ -182,21 +197,24 @@ func TestConfigureLogging(t *testing.T) {
 }
 
 func TestValuePutGet(t *testing.T) {
-	// t.Skip("skipping test to debug another")
+	// Creates a DHT with two nodes and checks that a put can be read by both nodes
+	//   given that they know of each other's existence
+	// example output: https://visual.tools/static/pastebin/TestValuePutGet.html
+
+	t.Skip("skipping test to debug another")
 	fmt.Println("Test value set and then get between two nodes")
 
-	// Creates a DHT with two nodes and checks that a put can be read with a get
-	//  The DHT nodes are referenced by variable pointers
+	
 	Convey("Test value set and get", t, 
 		func () { 
 			ctx, cancel := context.WithCancel(context.Background())
 
 			defer cancel()
 
-			fmt.Println("dht_test.go: TestValueSetGet: create dhtA")
+			fmt.Println("dht_test.go: TestValuePutGet: create dhtA")
 			dhtA := setupDHT(ctx, t, false)
 			fmt.Printf("dhtA is: %v\n", dhtA.self)
-			fmt.Println("dht_test.go: TestValueSetGet: create dhtB")
+			fmt.Println("dht_test.go: TestValuePutGet: create dhtB")
 			dhtB := setupDHT(ctx, t, false)
 			fmt.Printf("dhtB is: %v\n", dhtB.self)
 
@@ -222,23 +240,22 @@ func TestValuePutGet(t *testing.T) {
 			// dhtB.Selector["v"]  = nulsel
 
 
-			fmt.Printf("dht_test.go: TestValueSetGet: connect(t, ctx, dhtA (%v), dhtB (%v) )\n", dhtA.self, dhtB.self)
 			connect(t, ctx, dhtA, dhtB)
 
 			log.Error("adding value on: ", dhtA.self)
-			fmt.Printf("dht_test.go: TestValueSetGet: dhtA (%v) PutValue \"/v/hello\"\n", dhtA.self)
+			fmt.Printf("dht_test.go: TestValuePutGet: dhtA (%v) PutValue \"/v/hello\"\n", dhtA.self)
 			ctxT, cancel := context.WithTimeout(ctx, time.Second)
 			defer cancel()
 			err := dhtA.PutValue(ctxT, "/v/hello", []byte("world"))
 			So(err, ShouldBeNil)
 
-			fmt.Println("dht_test.go: TestValueSetGet: dhtA (%v) GetValue \"/v/hello\"\n", dhtA.self)
+			fmt.Printf("dht_test.go: TestValuePutGet: dhtA (%v) GetValue \"/v/hello\"\n", dhtA.self)
 			ctxT, _ = context.WithTimeout(ctx, time.Second*2)
 			val, err := dhtA.GetValue(ctxT, "/v/hello")
 			So(err, ShouldBeNil)
 			So(string(val), ShouldEqual, "world")
 
-			fmt.Println("dht_test.go: TestValueSetGet: dhtB (%v) GetValue \"/v/hello\"\n", dhtB.self)
+			fmt.Printf("dht_test.go: TestValuePutGet: dhtB (%v) GetValue \"/v/hello\"\n", dhtB.self)
 			log.Error("requesting value on dht: ", dhtB.self)
 			ctxT, cancel = context.WithTimeout(ctx, time.Second*2)
 			defer cancel()
@@ -249,8 +266,16 @@ func TestValuePutGet(t *testing.T) {
 }
 
 func TestProvides(t *testing.T) {
+	// example output: https://visual.tools/static/pastebin/TestProvides.html
+
+	// Value provider layer of indirection.
+	// This is what DSHTs (Coral and MainlineDHT) do to store large values in a DHT.
+	//   so the Value is not placed "where it should be" in the DHT, but s stored in a predetermined
+	//   location, and the "closestPeers" store the reference to the indirection
+
 	t.Skip("skipping test to debug another")
 	fmt.Println("dht_test.go: TestProvides")
+
 
 
 	ctx := context.Background()
@@ -263,12 +288,21 @@ func TestProvides(t *testing.T) {
 		}
 	}()
 
+	// connect the nodes, puts all nodes in all nodes routing tables
 	connect(t, ctx, dhts[0], dhts[1])
 	connect(t, ctx, dhts[1], dhts[2])
 	connect(t, ctx, dhts[1], dhts[3])
 
+	// dht[3] is the provider for all the keys in testCaseCids
+	// 	 dht[3] uses findClosestPeers
+	//   and sends a dht.sendMessage of a dht.makeProvRecord to all the closest Peers
+	//     (which must be all of them
+	//   to each of them
+	//     as hosts of the key
+	//   Done in parrallel
 	for _, k := range testCaseCids {
-		log.Debugf("announcing provider for %s", k)
+		log.Debugf("\n\nannouncing provider for %s", k)
+		// Provide is found in ./routing.go
 		if err := dhts[3].Provide(ctx, k, true); err != nil {
 			t.Fatal(err)
 		}
@@ -277,13 +311,16 @@ func TestProvides(t *testing.T) {
 	// what is this timeout for? was 60ms before.
 	time.Sleep(time.Millisecond * 6)
 
+	// round robins all the nodes on the DHT
+	//   looking for a provider for the testCaseCid
 	n := 0
 	for _, c := range testCaseCids {
 		n = (n + 1) % 3
 
-		log.Debugf("getting providers for %s from %d", c, n)
+		log.Debugf("\n\ngetting providers for %s from %d", c, n)
 		ctxT, cancel := context.WithTimeout(ctx, time.Second)
 		defer cancel()
+		
 		provchan := dhts[n].FindProvidersAsync(ctxT, c, 1)
 
 		select {
@@ -294,6 +331,9 @@ func TestProvides(t *testing.T) {
 			if prov.ID != dhts[3].self {
 				t.Fatal("Got back wrong provider")
 			}
+			if prov.ID == dhts[3].self {
+				fmt.Printf("dht_test.go: TestProvides: foundProvider: %v\n", dhts[3].self)
+			}
 		case <-ctxT.Done():
 			t.Fatal("Did not get a provider back.")
 		}
@@ -301,8 +341,13 @@ func TestProvides(t *testing.T) {
 }
 
 func TestLocalProvides(t *testing.T) {
+	// runs "Provide" with the broadcast = false
+	//   so only dht[3] knows about its providerness
+	// example output: https://visual.tools/static/pastebin/TestLocalProvides.html
+
+
 	t.Skip("skipping test to debug another")
-	fmt.Println("TestLocalProvides")
+	fmt.Println("dht_test.go: TestLocalProvides")
 
 	ctx := context.Background()
 
@@ -319,7 +364,7 @@ func TestLocalProvides(t *testing.T) {
 	connect(t, ctx, dhts[1], dhts[3])
 
 	for _, k := range testCaseCids {
-		log.Debugf("announcing provider for %s", k)
+		log.Debugf("\n\nannouncing provider for %s", k)
 		if err := dhts[3].Provide(ctx, k, false); err != nil {
 			t.Fatal(err)
 		}
@@ -332,6 +377,8 @@ func TestLocalProvides(t *testing.T) {
 			provs := dhts[i].providers.GetProviders(ctx, c)
 			if len(provs) > 0 {
 				t.Fatal("shouldnt know this")
+			} else {
+				log.Debugf("success: dht[%v] finds %v providers", i, len(provs) )
 			}
 		}
 	}
@@ -385,15 +432,22 @@ func printRoutingTables(dhts []*IpfsDHT) {
 }
 
 func TestBootstrap(t *testing.T) {
-	t.Skip("skipping test to debug another")
-	fmt.Println("TestBootstrap")
+	// Create a DHT with 30 nodes and run bootstrap a few times to populate the routing tables
+	//   
+	// example output: https://visual.tools/static/pastebin/TestBootstrap.html
 
 
-	if testing.Short() {
-		t.SkipNow()
-	}
+	// t.Skip("skipping test to debug another")
+	fmt.Println("dht_test.go: TestBootstrap")
+
+	// Current context, we always want to run the test
+
+	// // if testing.Short() {
+	// // 	t.SkipNow()
+	// // }
 
 	ctx := context.Background()
+
 
 	nDHTs := 30
 	_, _, dhts := setupDHTS(ctx, nDHTs, t)
@@ -404,19 +458,22 @@ func TestBootstrap(t *testing.T) {
 		}
 	}()
 
-	t.Logf("connecting %d dhts in a ring", nDHTs)
+	fmt.Printf("\n\ndht_test.go: TestBootstrap: connecting %d dhts in a ring\n", nDHTs)
 	for i := 0; i < nDHTs; i++ {
 		connect(t, ctx, dhts[i], dhts[(i+1)%len(dhts)])
 	}
+
+	fmt.Printf("\n\ndht_test.go: TestBootstrap: boostrapping dht\n")
 
 	<-time.After(100 * time.Millisecond)
 	// bootstrap a few times until we get good tables.
 	stop := make(chan struct{})
 	go func() {
 		for {
-			t.Logf("bootstrapping them so they find each other %d", nDHTs)
+			log.Debugf("bootstrapping routingTables %d", nDHTs)
 			ctxT, cancel := context.WithTimeout(ctx, 5*time.Second)
 			defer cancel()
+			fmt.Printf("\n\ndht_test.go: TestBootstrap:   ##call to bootstrap\n")
 			bootstrap(t, ctxT, dhts)
 
 			select {
@@ -431,7 +488,9 @@ func TestBootstrap(t *testing.T) {
 	waitForWellFormedTables(t, dhts, 7, 10, 20*time.Second)
 	close(stop)
 
-	if u.Debug {
+	fmt.Printf("\n\ndht_test.go: TestBootstrap: bootstrapping complete (tables well formed)\n")
+
+	if true {
 		// the routing tables should be full now. let's inspect them.
 		printRoutingTables(dhts)
 	}
